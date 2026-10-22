@@ -1,0 +1,41 @@
+name: Publish to npm
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    env:
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22"
+      - name: npm >= 11.5.1 (trusted publishing)
+        run: |
+          npm install -g npm@^11.5.1
+          node -e 'const [a,b,c]=process.argv[1].split(".").map(Number); process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)' "$(npm --version)"
+      - name: tag matches package.json version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: node scripts/check-pack.mjs
+      - name: Configure npm token (bootstrap mode only)
+        if: ${{ env.HAS_NPM_TOKEN == 'true' }}
+        env:
+          NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"
+        run: printf '//registry.npmjs.org/:_authToken=%s\n' "$NPM_TOKEN" > ~/.npmrc
+      - name: Report auth mode
+        run: |
+          if [ "$HAS_NPM_TOKEN" = "true" ]; then echo "auth mode: token"; else echo "auth mode: trusted-publishing"; fi
+      - run: npm publish --provenance --access public
