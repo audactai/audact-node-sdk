@@ -5,17 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
-### Added
-- `KBSource.chunk_count`, `KBSource.crawl_coverage` (new `KBCrawlCoverage`:
-  discovered / stored / excluded / failed pages) and `KBSource.last_ingested_at`:
-  the outcome of the source's latest successful ingestion. Absent
-  until a first ingestion has finished.
-
-## [0.4.0] - 2026-10-21
-
-### Added (2026-10-20)
-- `ListVoicesParams.limit` (1–1000; server default 100 per provider) and
-  `VoiceProvider.total` / `VoiceProvider.truncated`.
+## [0.4.0] - 2026-10-22
 
 ### Breaking
 - `AddKBSourceRequest.type` is narrowed to `"url" | "text"`; `"file"` was always
@@ -24,6 +14,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   C2PA claim signing with an X.509 chain, generator version 2.0.0).
 
 ### Added
+- `ListVoicesParams.limit` (1–1000; server default 100 per provider) and
+  `VoiceProvider.total` / `VoiceProvider.truncated`.
+- `KBSource.chunk_count`, `KBSource.crawl_coverage` (new `KBCrawlCoverage`:
+  discovered / stored / excluded / failed pages) and `KBSource.last_ingested_at`:
+  the outcome of the source's latest successful ingestion. Absent
+  until a first ingestion has finished.
 - ElevenLabs languages: `Voice.languages`, `VoiceProvider.models` /
   `TTSModelInfo`, and `listVoices({ language, provider })` (native speakers
   first; both optional, so existing calls are unchanged).
