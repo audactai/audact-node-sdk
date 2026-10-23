@@ -5,6 +5,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## [0.5.0] - 2026-10-23
+
+### Breaking
+- Without `baseUrl`, the client now targets the production API,
+  `https://api.audact.ai`, instead of `http://localhost:8081`–`8092`. The
+  README quick start (`new AudactClient({ apiKey })`) therefore works as
+  written. To keep targeting a local stack, pass
+  `serviceUrls: LOCAL_SERVICE_URLS`.
+
+### Added
+- `AUDACT_BASE_URL` environment variable, read where `process.env` exists.
+  Precedence: `serviceUrls`, `baseUrl`, `AUDACT_BASE_URL`, then
+  `https://api.audact.ai`. An empty `baseUrl` counts as unset.
+- Exports `DEFAULT_BASE_URL` and `LOCAL_SERVICE_URLS` (the per-service
+  localhost ports, frozen).
+- The README examples are now typechecked by the test suite.
+
+### Fixed
+- README webhook example: `createWebhook` takes `events` and `scope`, not
+  `event_types`, and the event names are `call_ended` and
+  `compliance.violation_detected`. The old example failed to compile and was
+  rejected with 400.
+- README TTS example: `createAgent` requires `language`.
+- README coverage: the SDK covers 209 of 211 documented operations. 0.4.0
+  already did; its README and the entry below say 208 of 210, which was out
+  of date. The parity tests now check the README's number.
+- `client.org.refresh()` and `client.auth.refreshToken()` are documented as
+  browser-only. Their refresh token is an httpOnly cookie, so from plain Node
+  they always fail with 401; call `login()` / `exchangeKey()` again instead.
+  The README login example no longer calls `refresh()`.
+
 ## [0.4.0] - 2026-10-22
 
 ### Breaking

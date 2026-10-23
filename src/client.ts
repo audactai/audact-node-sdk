@@ -234,13 +234,27 @@ export { AudactError, BaseServiceClient } from "./base.js";
 
 // ─── Default service URLs ────────────────────────────────────────────────────
 
-const DEFAULT_URLS: Required<ServiceURLs> = {
+/**
+ * The production API host. Used for every service when neither `baseUrl`
+ * nor the `AUDACT_BASE_URL` environment variable is set.
+ */
+export const DEFAULT_BASE_URL = "https://api.audact.ai";
+
+/**
+ * Per-service URLs of a local stack, where each service listens on its own
+ * port. Pass it as `serviceUrls` to target one:
+ *
+ * ```ts
+ * new AudactClient({ apiKey, serviceUrls: LOCAL_SERVICE_URLS });
+ * ```
+ */
+export const LOCAL_SERVICE_URLS: Readonly<Required<ServiceURLs>> = Object.freeze({
   validator: "http://localhost:8082",
   evidence: "http://localhost:8083",
   llmProxy: "http://localhost:8084",
   tenantManagement: "http://localhost:8085",
   // Platform-admin export/import routes are served by Tenant Management,
-  // not a separate service — same default host.
+  // not a separate service — same host.
   platform: "http://localhost:8085",
   voiceGateway: "http://localhost:8088",
   agentWorker: "http://localhost:8089",
@@ -248,7 +262,17 @@ const DEFAULT_URLS: Required<ServiceURLs> = {
   aggregator: "http://localhost:8087",
   audioValidator: "http://localhost:8086",
   policyEngine: "http://localhost:8081",
-};
+});
+
+/**
+ * Reads `AUDACT_BASE_URL` where a `process.env` exists (Node, Bun, Deno's
+ * Node compatibility); browsers have none and get `undefined`.
+ */
+function envBaseUrl(): string | undefined {
+  const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process;
+  return proc?.env?.["AUDACT_BASE_URL"];
+}
 
 /**
  * Normalizes a public base URL: strips trailing "/" (repeated), then a
@@ -419,15 +443,16 @@ export class AudactClient {
 
   constructor(options: AudactClientOptions) {
     this.apiKey = options.apiKey;
-    const hostUrls: Partial<ServiceURLs> = {};
-    if (options.baseUrl !== undefined && options.baseUrl !== "") {
-      const host = normalizeBaseUrl(options.baseUrl);
-      for (const key of Object.keys(DEFAULT_URLS) as (keyof ServiceURLs)[]) {
-        hostUrls[key] = host;
-      }
+    // Precedence: serviceUrls, then baseUrl, then AUDACT_BASE_URL, then the
+    // production host. An empty string counts as unset.
+    const host = normalizeBaseUrl(
+      options.baseUrl || envBaseUrl() || DEFAULT_BASE_URL,
+    );
+    const hostUrls = {} as Required<ServiceURLs>;
+    for (const key of Object.keys(LOCAL_SERVICE_URLS) as (keyof ServiceURLs)[]) {
+      hostUrls[key] = host;
     }
     this.urls = {
-      ...DEFAULT_URLS,
       ...hostUrls,
       ...options.serviceUrls,
     };
@@ -4222,13 +4247,19 @@ export class OrgClient extends BaseServiceClient {
   }
 
   /**
-   * Rotates the org refresh token (server-side, via an httpOnly cookie — not
-   * a parameter of this method) and mints a fresh access token, which
-   * replaces the token stored on this client. Browser-first: non-browser/
-   * MCP clients that cannot participate in a `Set-Cookie` round trip should
-   * re-authenticate via {@link login} instead when the access token expires.
+   * Rotates the org refresh token and mints a fresh access token, which
+   * replaces the token stored on this client.
    *
-   * @throws {AudactError} 401 if the refresh token is missing, unknown, or
+   * **Browser only.** The refresh token is never in a response body: the
+   * server keeps it in an httpOnly, `SameSite=Strict` cookie set by
+   * {@link login}/{@link signup}, and this method sends no token of its own.
+   * It therefore works only where the runtime stores and resends that
+   * cookie: a browser on the same site as the API, or a runtime whose global
+   * `fetch` has been wrapped with a cookie jar. In plain Node (servers,
+   * scripts, MCP tools) it always fails with 401 "refresh token is
+   * required"; call {@link login} again when the access token expires.
+   *
+   * @throws {AudactError} 401 if the refresh cookie is missing, unknown, or
    *                       expired.
    */
   async refresh(): Promise<OrgRefreshResponse> {
@@ -4854,14 +4885,16 @@ export class AudioClient extends BaseServiceClient {
  * a 15-minute access token; the server also sets a 7-day refresh token as an
  * httpOnly, `SameSite=Strict` cookie scoped to `/v1/auth`. `refreshToken()`
  * reads that cookie (never present in either JSON body) to rotate both
- * tokens — the caller's `fetch` runtime must retain and resend cookies
- * (e.g. a browser, or Node with an explicit cookie jar) for this to work.
+ * tokens, so it works only where the runtime stores and resends cookies: a
+ * browser on the same site as the API, or a runtime whose global `fetch`
+ * has been wrapped with a cookie jar. In plain Node it always fails with
+ * 401; call `exchangeKey()` again instead.
  *
  * @example
  * ```ts
  * const client = new AudactClient({ apiKey: "aud_live_..." });
  * const { access_token, expires_in } = await client.auth.exchangeKey();
- * // ... later, once the access token nears expiry:
+ * // ... later, once the access token nears expiry (browser only):
  * const rotated = await client.auth.refreshToken();
  * ```
  */
@@ -4880,7 +4913,8 @@ export class AuthClient extends BaseServiceClient {
   /**
    * Validates the refresh-token cookie set by {@link exchangeKey} (or a
    * previous `refreshToken()` call) and issues a new access token plus a
-   * rotated refresh token (single-use rotation).
+   * rotated refresh token (single-use rotation). Browser only: see the
+   * class description; in plain Node call {@link exchangeKey} again.
    *
    * @throws {AudactError} 401 if the refresh token is missing, invalid, or expired.
    */

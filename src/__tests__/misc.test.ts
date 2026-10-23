@@ -25,6 +25,7 @@ import {
   AudioClient,
   AuthClient,
   PolicyClient,
+  LOCAL_SERVICE_URLS,
 } from "../client.js";
 
 import type {
@@ -586,8 +587,8 @@ describe("AudactClient policy/audio/auth wiring", () => {
     expect(client.auth).toBeInstanceOf(AuthClient);
   });
 
-  it("defaults client.policy to the policy-engine base URL (port 8081)", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+  it("wires client.policy to the policy-engine base URL (port 8081)", async () => {
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk(CALLING_HOURS_RESPONSE);
 
     await client.policy.checkCallingHours({ country: "NL" });
@@ -598,8 +599,8 @@ describe("AudactClient policy/audio/auth wiring", () => {
     );
   });
 
-  it("defaults client.audio to the audio-validator base URL (port 8086)", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+  it("wires client.audio to the audio-validator base URL (port 8086)", async () => {
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk(VALIDATE_AUDIO_RESPONSE);
 
     await client.audio.validateAudio({
@@ -613,8 +614,8 @@ describe("AudactClient policy/audio/auth wiring", () => {
     expect(url).toBe("http://localhost:8086/v1/validate-audio");
   });
 
-  it("defaults client.auth to the tenant-management base URL (port 8085)", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+  it("wires client.auth to the tenant-management base URL (port 8085)", async () => {
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk(EXCHANGE_KEY_RESPONSE);
 
     await client.auth.exchangeKey();

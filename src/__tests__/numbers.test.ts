@@ -18,7 +18,7 @@ import {
   type MockInstance,
 } from "vitest";
 
-import { AudactClient, AudactError, NumbersClient } from "../client.js";
+import { AudactClient, AudactError, NumbersClient, LOCAL_SERVICE_URLS } from "../client.js";
 
 import type {
   KYCDocument,
@@ -969,8 +969,8 @@ describe("AudactClient numbers wiring", () => {
     expect(client.numbers).toBeInstanceOf(NumbersClient);
   });
 
-  it("defaults client.numbers to the voice-gateway base URL (port 8088)", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+  it("wires client.numbers to the voice-gateway base URL (port 8088)", async () => {
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk({ documents: [] });
 
     await client.numbers.listKycDocuments();

@@ -37,19 +37,33 @@ if (result.verdict === "ALLOW") {
 
 ## Base URL
 
-In production every service sits behind one public host, path-routed under `/v1`. Pass it once:
+Every service sits behind one public host, path-routed under `/v1`. The SDK targets the production
+host, `https://api.audact.ai`, unless told otherwise. To use another host, pass `baseUrl` or set the
+`AUDACT_BASE_URL` environment variable:
 
 ```ts
-const client = new AudactClient({ apiKey: process.env.AUDACT_API_KEY!, baseUrl: "https://api.audact.ai" });
+const client = new AudactClient({ apiKey: process.env.AUDACT_API_KEY!, baseUrl: "https://api.example.com" });
 ```
 
-A trailing `/` or `/v1` on `baseUrl` is stripped; requests go to `https://api.audact.ai/v1/...`.
-`serviceUrls` (per-service overrides, which win over `baseUrl`) are only needed for local stacks.
-With neither option set, the SDK targets the localhost service ports.
+A trailing `/` or `/v1` is stripped; requests go to `<host>/v1/...`. The host is resolved in this
+order: `serviceUrls` (per service), `baseUrl`, `AUDACT_BASE_URL` (where `process.env` exists), then
+`https://api.audact.ai`.
+
+`serviceUrls` is only needed for a local stack, where every service listens on its own port. The
+SDK exports those ports as `LOCAL_SERVICE_URLS`:
+
+```ts
+import { AudactClient, LOCAL_SERVICE_URLS } from "@audactcore/sdk";
+
+const local = new AudactClient({ apiKey: process.env.AUDACT_API_KEY!, serviceUrls: LOCAL_SERVICE_URLS });
+```
+
+> **Upgrading from 0.4.x:** without `baseUrl`, 0.4.x targeted `http://localhost:8081`–`8092`. If you
+> relied on that, pass `serviceUrls: LOCAL_SERVICE_URLS`.
 
 ## Coverage
 
-The SDK is at full parity with the documented API: **208 of 210** operations in
+The SDK is at full parity with the documented API: **209 of 211** operations in
 the documented Audact API are covered (the remaining 2 are receive-side provider→platform webhooks —
 `POST /telnyx/webhook` and `POST /webhooks/livekit` — which are ingress endpoints Audact receives,
 never calls).
@@ -97,6 +111,7 @@ const voice = voices.elevenlabs.voices[0].voice_id;
 
 await client.agents.createAgent({
   name: "Concierge",
+  language: "en",
   tts_provider: "elevenlabs",
   tts_model: "eleven_flash_v2_5", // omit for the provider default
   voice_id: voice,
@@ -153,10 +168,15 @@ await client.org.login({ email: "admin@example.com", password: "hunter2" });
 const profile = await client.org.getProfile();
 const tenants = await client.org.listTenants();
 
-// Rotate the token before it expires, then clear it when done.
-await client.org.refresh();
+// Clear the token when done.
 await client.org.logout();
 ```
+
+When the access token expires, call `login()` again. `client.org.refresh()` exists for browser
+dashboards only: the refresh token lives in an httpOnly, `SameSite=Strict` cookie, which only a
+browser on the same site as the API stores and sends back. From Node it always fails with
+`401 refresh token is required`. The same applies to `client.auth.refreshToken()`; call
+`client.auth.exchangeKey()` again instead.
 
 Alternatively, start pre-authenticated:
 
@@ -168,18 +188,22 @@ const client = new AudactClient({
 });
 ```
 
-### A new client: webhooks
+### Webhooks
 
 ```ts
 const endpoint = await client.webhooks.createWebhook({
   url: "https://example.com/hooks/audact",
-  event_types: ["call.completed", "violation.detected"],
+  events: ["call_ended", "compliance.violation_detected"],
+  scope: "account",
 });
 
 await client.webhooks.testWebhook(endpoint.id);
 
 const deliveries = await client.webhooks.listWebhookDeliveries(endpoint.id);
 ```
+
+`client.webhooks.listWebhookEventTypes()` returns every event name you can subscribe to. `scope`
+is `"account"`, `"agent"` (also pass `agent_id`) or `"compliance"`.
 
 ## Development
 

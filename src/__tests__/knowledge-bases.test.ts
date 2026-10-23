@@ -20,7 +20,7 @@ import {
   type MockInstance,
 } from "vitest";
 
-import { AudactClient, AudactError, KnowledgeBasesClient } from "../client.js";
+import { AudactClient, AudactError, KnowledgeBasesClient, LOCAL_SERVICE_URLS } from "../client.js";
 
 import type {
   KBAgentLink,
@@ -173,7 +173,7 @@ describe("KnowledgeBasesClient", () => {
 
   it("is wired into AudactClient against the Tenant Management service", async () => {
     const spy = mockFetchOk(KB);
-    const audact = new AudactClient({ apiKey: API_KEY });
+    const audact = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
 
     expect(audact.knowledgeBases).toBeInstanceOf(KnowledgeBasesClient);
     await audact.knowledgeBases.getKnowledgeBase(KB_ID);

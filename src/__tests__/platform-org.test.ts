@@ -24,7 +24,7 @@ import {
   type MockInstance,
 } from "vitest";
 
-import { AudactClient, AudactError, PlatformOrgClient } from "../client.js";
+import { AudactClient, AudactError, PlatformOrgClient, LOCAL_SERVICE_URLS } from "../client.js";
 
 import type {
   PlatformFindOrgAdminsResponse,
@@ -379,6 +379,7 @@ describe("AudactClient.platform.orgs wiring", () => {
 
   it("constructs client.platform.orgs against the orgManagement service URL", async () => {
     const client = new AudactClient({
+      serviceUrls: LOCAL_SERVICE_URLS,
       apiKey: "aud_live_test1234567890abcdef",
       platformToken: PLATFORM_TOKEN,
     });

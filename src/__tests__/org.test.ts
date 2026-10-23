@@ -24,7 +24,7 @@ import {
   type MockInstance,
 } from "vitest";
 
-import { AudactClient, AudactError, OrgClient } from "../client.js";
+import { AudactClient, AudactError, OrgClient, LOCAL_SERVICE_URLS } from "../client.js";
 
 import type {
   OrgCreateTenantResponse,
@@ -734,7 +734,7 @@ describe("AudactClient.org wiring", () => {
   });
 
   it("constructs client.org against the orgManagement service URL", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk(PROFILE_RESPONSE);
 
     await client.org.getProfile();
@@ -770,6 +770,7 @@ describe("AudactClient.org wiring", () => {
 
   it("exposes the org-tenant lifecycle on client.org", async () => {
     const client = new AudactClient({
+      serviceUrls: LOCAL_SERVICE_URLS,
       apiKey: API_KEY,
       orgToken: "preset-org-jwt",
     });

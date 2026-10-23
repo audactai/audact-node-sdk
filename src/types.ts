@@ -5110,34 +5110,37 @@ export interface APIErrorBody {
 // ─── Client Configuration ────────────────────────────────────────────────────
 
 /**
- * Service base URL overrides. Defaults to localhost ports per service.
+ * Per-service base URL overrides. Each one wins over `baseUrl`. Unset
+ * services use the shared host (`baseUrl`, then `AUDACT_BASE_URL`, then
+ * `https://api.audact.ai`). For a local stack, pass `LOCAL_SERVICE_URLS`,
+ * which holds the localhost port shown on each field.
  */
 export interface ServiceURLs {
-  /** Validator service base URL. Default: http://localhost:8082 */
+  /** Validator service base URL. Local stack: http://localhost:8082 */
   validator?: string;
-  /** Evidence Layer service base URL. Default: http://localhost:8083 */
+  /** Evidence Layer service base URL. Local stack: http://localhost:8083 */
   evidence?: string;
-  /** LLM Proxy service base URL. Default: http://localhost:8084 */
+  /** LLM Proxy service base URL. Local stack: http://localhost:8084 */
   llmProxy?: string;
-  /** Tenant Management service base URL. Default: http://localhost:8085 */
+  /** Tenant Management service base URL. Local stack: http://localhost:8085 */
   tenantManagement?: string;
   /**
-   * Platform-admin (export/import) API base URL. Defaults to the same host
-   * as `tenantManagement` (port 8085) since the platform-admin routes are
-   * served by Tenant Management, not a separate service.
+   * Platform-admin (export/import) API base URL. Same host as
+   * `tenantManagement` (local stack: port 8085), since the platform-admin
+   * routes are served by Tenant Management, not a separate service.
    */
   platform?: string;
-  /** Voice Gateway service base URL (KYC + number provisioning). Default: http://localhost:8088 */
+  /** Voice Gateway service base URL (KYC + number provisioning). Local stack: http://localhost:8088 */
   voiceGateway?: string;
-  /** Agent Worker service base URL. Default: http://localhost:8089 */
+  /** Agent Worker service base URL. Local stack: http://localhost:8089 */
   agentWorker?: string;
-  /** Org Management service base URL. Default: http://localhost:8092 */
+  /** Org Management service base URL. Local stack: http://localhost:8092 */
   orgManagement?: string;
-  /** Aggregator service base URL. Default: http://localhost:8087 */
+  /** Aggregator service base URL. Local stack: http://localhost:8087 */
   aggregator?: string;
-  /** Audio Validator service base URL. Default: http://localhost:8086 */
+  /** Audio Validator service base URL. Local stack: http://localhost:8086 */
   audioValidator?: string;
-  /** Policy Engine service base URL. Default: http://localhost:8081 */
+  /** Policy Engine service base URL. Local stack: http://localhost:8081 */
   policyEngine?: string;
 }
 
@@ -5151,12 +5154,16 @@ export interface AudactClientOptions {
    */
   apiKey: string;
   /**
-   * One public host for every service, e.g. "https://api.audact.ai". A trailing "/" or "/v1" is stripped. Per-service `serviceUrls` still win.
+   * One public host for every service. A trailing "/" or "/v1" is stripped.
+   * When unset (or empty), the `AUDACT_BASE_URL` environment variable is used
+   * where `process.env` exists, then `https://api.audact.ai`. Per-service
+   * `serviceUrls` still win.
    */
   baseUrl?: string;
   /**
-   * Override the base URLs for each Audact service.
-   * Useful for pointing at deployed environments instead of localhost.
+   * Override the base URL of individual Audact services; each wins over
+   * `baseUrl`. Only needed for a local stack, where every service listens
+   * on its own port: pass `LOCAL_SERVICE_URLS`.
    */
   serviceUrls?: ServiceURLs;
   /**

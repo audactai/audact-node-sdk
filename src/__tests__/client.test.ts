@@ -1307,9 +1307,19 @@ describe("Authorization header", () => {
 
 // ─── baseUrl option ───────────────────────────────────────────────
 
-import { normalizeBaseUrl } from "../client.js";
+import { DEFAULT_BASE_URL, LOCAL_SERVICE_URLS, normalizeBaseUrl } from "../client.js";
 
 describe("baseUrl option", () => {
+  // Each test owns AUDACT_BASE_URL; restore whatever the runner had.
+  const savedEnv = process.env.AUDACT_BASE_URL;
+  beforeEach(() => {
+    delete process.env.AUDACT_BASE_URL;
+  });
+  afterEach(() => {
+    if (savedEnv === undefined) delete process.env.AUDACT_BASE_URL;
+    else process.env.AUDACT_BASE_URL = savedEnv;
+  });
+
   const V020_DEFAULTS = {
     validator: "http://localhost:8082",
     evidence: "http://localhost:8083",
@@ -1326,8 +1336,58 @@ describe("baseUrl option", () => {
   const urlsOf = (c: AudactClient) =>
     (c as unknown as { urls: Record<string, string> }).urls;
 
-  it("without baseUrl, defaults equal the 0.2.0 localhost values", () => {
-    expect(urlsOf(new AudactClient({ apiKey: "k" }))).toEqual(V020_DEFAULTS);
+  it("without baseUrl, every service defaults to the production host", () => {
+    const urls = urlsOf(new AudactClient({ apiKey: "k" }));
+    expect(DEFAULT_BASE_URL).toBe("https://api.audact.ai");
+    expect(Object.keys(urls).sort()).toEqual(Object.keys(V020_DEFAULTS).sort());
+    for (const v of Object.values(urls)) expect(v).toBe("https://api.audact.ai");
+  });
+
+  it("an empty baseUrl counts as unset", () => {
+    const urls = urlsOf(new AudactClient({ apiKey: "k", baseUrl: "" }));
+    for (const v of Object.values(urls)) expect(v).toBe("https://api.audact.ai");
+  });
+
+  it("the default request goes to https://api.audact.ai/v1/...", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ allowed: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    await new AudactClient({ apiKey: "k" }).policy.checkCallingHours({ country: "NL" });
+    const [url] = spy.mock.calls[0] as [string];
+    expect(url).toBe("https://api.audact.ai/v1/calling-hours/check?country=NL");
+    spy.mockRestore();
+  });
+
+  it("AUDACT_BASE_URL is used when baseUrl is unset", () => {
+    process.env.AUDACT_BASE_URL = "https://env.example.test/v1/";
+    const urls = urlsOf(new AudactClient({ apiKey: "k" }));
+    for (const v of Object.values(urls)) expect(v).toBe("https://env.example.test");
+  });
+
+  it("baseUrl beats AUDACT_BASE_URL", () => {
+    process.env.AUDACT_BASE_URL = "https://env.example.test";
+    const urls = urlsOf(new AudactClient({ apiKey: "k", baseUrl: "https://h" }));
+    for (const v of Object.values(urls)) expect(v).toBe("https://h");
+  });
+
+  it("serviceUrls beats AUDACT_BASE_URL", () => {
+    process.env.AUDACT_BASE_URL = "https://env.example.test";
+    const urls = urlsOf(
+      new AudactClient({ apiKey: "k", serviceUrls: { evidence: "http://e:1" } }),
+    );
+    expect(urls.evidence).toBe("http://e:1");
+    expect(urls.validator).toBe("https://env.example.test");
+  });
+
+  it("LOCAL_SERVICE_URLS equals the 0.2.0 localhost values and targets a local stack", () => {
+    expect(LOCAL_SERVICE_URLS).toEqual(V020_DEFAULTS);
+    expect(Object.isFrozen(LOCAL_SERVICE_URLS)).toBe(true);
+    expect(
+      urlsOf(new AudactClient({ apiKey: "k", serviceUrls: LOCAL_SERVICE_URLS })),
+    ).toEqual(V020_DEFAULTS);
   });
 
   it("baseUrl applies to every service", () => {

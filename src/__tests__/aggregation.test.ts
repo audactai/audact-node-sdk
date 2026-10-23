@@ -19,7 +19,7 @@ import {
   type MockInstance,
 } from "vitest";
 
-import { AggregationClient, AudactClient, AudactError } from "../client.js";
+import { AggregationClient, AudactClient, AudactError, LOCAL_SERVICE_URLS } from "../client.js";
 
 import type {
   AdminAggregateResponse,
@@ -362,8 +362,8 @@ describe("AudactClient aggregation wiring", () => {
     expect(client.aggregation).toBeInstanceOf(AggregationClient);
   });
 
-  it("defaults client.aggregation to the aggregator base URL (port 8087)", async () => {
-    const client = new AudactClient({ apiKey: API_KEY });
+  it("wires client.aggregation to the aggregator base URL (port 8087)", async () => {
+    const client = new AudactClient({ apiKey: API_KEY, serviceUrls: LOCAL_SERVICE_URLS });
     const spy = mockFetchOk(METACHAIN_RESPONSE);
 
     await client.aggregation.getMetachain();
