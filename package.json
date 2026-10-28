@@ -1,8 +1,14 @@
 {
   "name": "@audactcore/sdk",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Official TypeScript SDK for the Audact AI compliance platform",
-  "keywords": ["audact", "compliance", "ai", "llm", "acvf"],
+  "keywords": [
+    "audact",
+    "compliance",
+    "ai",
+    "llm",
+    "acvf"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

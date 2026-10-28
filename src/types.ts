@@ -451,8 +451,8 @@ export interface CallRecord {
   /** Media channel: "webrtc" (browser) or "pstn". Absent for historical calls recorded before the channel column existed. */
   channel?: string;
   status: string;
-  /** Arbitrary per-call metadata, serialized as a JSON string. */
-  metadata: string;
+  /** Arbitrary per-call metadata: a JSON object on the wire, e.g. `{"country":"DE"}`. */
+  metadata: Record<string, unknown>;
   started_at: string;
   /** Null while the call is still active. */
   ended_at?: string;
@@ -516,7 +516,8 @@ export interface CallDetail {
     | "voicemail"
     | "carrier_error";
   sip_response_code?: number;
-  metadata: string;
+  /** Arbitrary per-call metadata: a JSON object on the wire. */
+  metadata: Record<string, unknown>;
   started_at: string;
   ended_at?: string;
   duration_ms?: number;
@@ -620,8 +621,8 @@ export interface ViolationRecord {
   sequence: number;
   hash: string;
   timestamp: string;
-  /** Canonical event payload (contains result, rule_id, etc.), serialized as a JSON string. */
-  data: string;
+  /** Canonical event payload (contains result, rule_id, etc.): a JSON value on the wire. */
+  data: unknown;
 }
 
 /** Response from GET /v1/violations. */
@@ -3408,6 +3409,8 @@ export type AgentTTSModel =
   | "eleven_flash_v2_5"
   | "eleven_multilingual_v2"
   | "eleven_turbo_v2_5"
+  | "eleven_v3_conversational"
+  | "eleven_v4_turbo"
   | "voxtral-mini-tts-2603";
 
 /** Built-in TTS voice id accepted by the agent API. See {@link AgentsClient.listVoices}. */
@@ -4791,7 +4794,8 @@ export interface PolicyJurisdictionCascade {
 export interface PolicyRuleCondition {
   field: string;
   operator: string;
-  value: string;
+  /** Comparison operand; its JSON type depends on the operator. */
+  value: string | number | boolean | string[];
 }
 
 /** One ordered compliance rule evaluated per call. */

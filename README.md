@@ -63,10 +63,10 @@ const local = new AudactClient({ apiKey: process.env.AUDACT_API_KEY!, serviceUrl
 
 ## Coverage
 
-The SDK is at full parity with the documented API: **209 of 211** operations in
-the documented Audact API are covered (the remaining 2 are receive-side provider→platform webhooks —
-`POST /telnyx/webhook` and `POST /webhooks/livekit` — which are ingress endpoints Audact receives,
-never calls).
+The SDK is at full parity with the documented API: **209 of 212** operations in
+the documented Audact API are covered (the remaining 3 are two receive-side provider→platform webhooks —
+`POST /telnyx/webhook` and `POST /webhooks/livekit`, ingress endpoints Audact receives,
+never calls — and the binary voice-preview audio endpoint).
 
 | Sub-client | Service (port) | Auth | What it covers |
 |---|---|---|---|

@@ -610,6 +610,7 @@ export class ValidatorClient extends BaseServiceClient {
    * @param callId - UUID of the call.
    * @param req - Optional agent attribution.
    * @throws {AudactError} on HTTP 4xx/5xx or network errors.
+   * @deprecated `POST /v1/calls/{call_id}/finalize-score` is an internal endpoint and is not routed on the public API, so this method fails against api.audact.ai. It will be removed in a future release.
    */
   async finalizeCallScore(
     callId: string,

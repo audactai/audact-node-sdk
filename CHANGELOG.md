@@ -5,6 +5,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## [0.6.0] - 2026-10-28
+
+### Breaking
+- `CallRecord.metadata` and `CallDetail.metadata` are now
+  `Record<string, unknown>` (were `string`), `ViolationRecord.data` is now
+  `unknown` (was `string`), and `PolicyRuleCondition.value` is now
+  `string | number | boolean | string[]` (was `string`). Migration: drop
+  `JSON.parse(...)` on these fields and narrow `value` with `typeof` where needed.
+
+### Fixed
+- Types now match the API: the fields above are sent as JSON objects, arrays,
+  numbers and booleans, never as JSON-encoded strings.
+
+### Deprecated
+- `finalizeCallScore`: the endpoint is internal and not routed on the public
+  API, so the method fails against api.audact.ai. It will be removed in a
+  future release.
+
+### Added
+- `AgentTTSModel` accepts `"eleven_v4_turbo"` and `"eleven_v3_conversational"`
+  (ElevenLabs realtime models).
+
 ## [0.5.0] - 2026-10-23
 
 ### Breaking
